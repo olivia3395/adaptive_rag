@@ -1,0 +1,3 @@
+Self-reflection in adaptive RAG acts as a hallucination check. After the model produces a candidate answer, a verifier examines whether the claims are actually grounded in the retrieved evidence. The verifier can label the result as grounded, partially grounded, or hallucinated.
+
+If the answer is weakly supported, the system can trigger additional retrieval, revise the response, or explicitly decline to answer. This makes adaptive RAG more robust than a pipeline that retrieves once and answers regardless of evidence quality.

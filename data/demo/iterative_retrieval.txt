@@ -1,0 +1,3 @@
+Iterative retrieval is useful when the first batch of documents only partially addresses a question. In multi-hop question answering, one retrieved document may reveal a new entity, event, or constraint that should become the focus of a second search. Instead of assuming that the first retrieval is sufficient, the system analyzes uncertainty in the draft answer and formulates a follow-up query.
+
+For example, the first pass may retrieve a paragraph about GraphRAG and mention that graph expansion helps recover second-hop evidence. A second pass can then ask specifically about second-hop evidence, entity links, or missing support for the final claim. This often improves answer completeness compared with vanilla RAG.

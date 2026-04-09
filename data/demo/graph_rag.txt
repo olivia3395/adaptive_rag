@@ -1,0 +1,3 @@
+GraphRAG augments retrieval with graph structure, often by connecting entities, chunks, or documents in a knowledge graph. After a first-hop retrieval step, graph expansion can surface related chunks that were not top-ranked by dense similarity alone. This is especially useful when evidence is distributed across multiple pieces of text connected through shared entities.
+
+Compared with vanilla RAG, GraphRAG is better at recovering multi-hop support. However, GraphRAG alone does not decide whether retrieval is necessary, and it does not always detect when an answer remains insufficiently grounded. Adaptive RAG can incorporate GraphRAG as one component inside a broader control loop.
