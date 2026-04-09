@@ -1,131 +1,231 @@
-# Adaptive RAG with Query Routing, Iterative Retrieval, and Self-Reflection
+<div align="center">
 
-A runnable Python project for **Adaptive RAG** that lets the system decide whether to retrieve, perform iterative follow-up retrieval, and verify whether the answer is grounded in evidence.
+# 🧠 Adaptive RAG
 
-## What this project implements
+**Query Routing · Iterative Retrieval · Self-Reflection**
 
-- **Query classifier / routing layer**
-  - Routes simple questions to direct answering
-  - Routes complex or time-sensitive questions to retrieval
-- **Iterative retrieval**
-  - First retrieval pass -> draft answer -> follow-up query -> second retrieval pass
-- **Self-reflection / hallucination check**
-  - Labels answers as `grounded`, `partially_grounded`, or `hallucinated`
-  - Refuses to answer when support is too weak
-- **Baseline comparison modes**
-  - `vanilla`: retrieve once and answer
-  - `graph`: retrieve + graph expansion
-  - `adaptive`: route + iterative retrieval + reflection
+[![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![License](https://img.shields.io/badge/License-MIT-F7DF1E?style=flat-square)](LICENSE)
+[![No API Key Required](https://img.shields.io/badge/API%20Key-Optional-brightgreen?style=flat-square)](##quickstart)
 
-## Design choice
+*A production-ready Python pipeline that decides when to retrieve, how many times to retrieve, and whether the answer is actually grounded in evidence.*
 
-This repo is designed to be **easy to run locally**:
-- default retrieval uses **TF-IDF + cosine similarity**
-- default reflection is a **lexical grounding heuristic**
-- optional OpenAI API support is included for answer generation enhancement
+</div>
 
-So the project works **even without an API key**.
 
-## Project structure
+## ✨ What Makes This Different
 
-```text
-adaptive_rag_project/
+Most RAG systems retrieve once and hope for the best. This one **thinks before, during, and after**.
+
+| Feature | Vanilla RAG | This Project |
+|---|:---:|:---:|
+| Single retrieval pass | ✅ | ✅ |
+| Query routing (skip retrieval when unnecessary) | ❌ | ✅ |
+| Iterative follow-up retrieval | ❌ | ✅ |
+| Hallucination / grounding check | ❌ | ✅ |
+| Works without an API key | ❌ | ✅ |
+
+
+
+## 🏗️ Architecture
+
+```
+                      ┌─────────────────────┐
+         question ──► │   Query Classifier   │
+                      └────────┬────────────┘
+                               │
+              ┌────────────────┼────────────────┐
+              ▼                                  ▼
+        "simple fact"                     "complex / recent"
+              │                                  │
+              ▼                                  ▼
+       Direct Answer                    ┌──────────────────┐
+                                        │  Retrieval Pass 1 │
+                                        └────────┬─────────┘
+                                                 │
+                                        ┌────────▼─────────┐
+                                        │   Draft Answer    │
+                                        └────────┬─────────┘
+                                                 │
+                                        ┌────────▼─────────┐
+                                        │  Follow-up Query  │
+                                        └────────┬─────────┘
+                                                 │
+                                        ┌────────▼─────────┐
+                                        │  Retrieval Pass 2 │
+                                        └────────┬─────────┘
+                                                 │
+                                        ┌────────▼─────────┐
+                                        │  Self-Reflection  │◄── grounded?
+                                        └────────┬─────────┘     partially?
+                                                 │                hallucinated?
+                                        ┌────────▼─────────┐
+                                        │   Final Answer    │
+                                        └──────────────────┘
+```
+
+
+
+## 📦 Project Structure
+
+```
+adaptive_rag/
 ├── app/
-│   ├── api/
-│   ├── core/
-│   ├── embeddings/
-│   ├── evaluation/
-│   ├── ingestion/
-│   ├── llm/
-│   ├── pipelines/
-│   ├── retrieval/
-│   ├── stores/
-│   └── utils/
-├── data/demo/
+│   ├── api/              # FastAPI route handlers
+│   ├── core/             # Config & shared types
+│   ├── embeddings/       # TF-IDF / dense embedding adapters
+│   ├── evaluation/       # Grounding scorer & metrics
+│   ├── ingestion/        # Document loading & chunking
+│   ├── llm/              # LLM abstraction (local + OpenAI)
+│   ├── pipelines/        # vanilla · graph · adaptive
+│   ├── retrieval/        # Cosine sim retriever
+│   ├── stores/           # Vector & document stores
+│   └── utils/            # Logging, text helpers
+├── data/demo/            # Sample documents to get started
 ├── scripts/
+│   ├── run_demo.py       # Interactive comparison
+│   └── evaluate_demo.py  # Mini benchmark harness
 ├── tests/
 ├── requirements.txt
 └── README.md
 ```
 
-## Quickstart
+
+
+## 🚀 Quickstart
+
+### 1 · Install
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env
+```
+
+> **No API key needed.** The default pipeline uses TF-IDF retrieval and a lexical grounding heuristic — everything runs fully offline.
+
+### 2 · Start the server
+
+```bash
 uvicorn app.main:app --reload
 ```
 
-## Ingest demo data
+### 3 · Ingest demo documents
 
 ```bash
 curl -X POST http://localhost:8000/ingest \
   -H "Content-Type: application/json" \
-  -d '{"data_dir":"./data/demo"}'
+  -d '{"data_dir": "./data/demo"}'
 ```
 
-## Run a query
+### 4 · Ask a question
 
 ```bash
 curl -X POST http://localhost:8000/query \
   -H "Content-Type: application/json" \
-  -d '{"question":"How does adaptive RAG differ from vanilla RAG?","mode":"adaptive","top_k":4,"max_iterations":2}'
+  -d '{
+    "question":       "How does adaptive RAG differ from vanilla RAG?",
+    "mode":           "adaptive",
+    "top_k":          4,
+    "max_iterations": 2
+  }'
 ```
 
-## API
 
-- `GET /health`
-- `POST /ingest`
-- `POST /query`
 
-### Query modes
+## 🌐 API Reference
 
-- `vanilla`: single retrieval pass
-- `graph`: retrieval + graph expansion
-- `adaptive`: routing + iterative retrieval + reflection
+### `GET /health`
+Returns service status.
 
-## Example response fields
+### `POST /ingest`
+| Field | Type | Description |
+|---|---|---|
+| `data_dir` | `string` | Path to a directory of `.txt` / `.md` documents |
 
-- `route`: `direct` or `rag`
-- `iterations_used`
-- `retrieved`
-- `reflection`
-- `follow_up_queries`
+### `POST /query`
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `question` | `string` | — | The user's question |
+| `mode` | `string` | `adaptive` | `vanilla` · `graph` · `adaptive` |
+| `top_k` | `int` | `4` | Documents retrieved per pass |
+| `max_iterations` | `int` | `2` | Maximum retrieval rounds |
 
-## Demo scripts
+### Response fields
 
-Run an interactive comparison:
+```jsonc
+{
+  "answer":           "...",
+  "route":            "direct | rag",
+  "iterations_used":  2,
+  "retrieved":        [...],
+  "reflection":       "grounded | partially_grounded | hallucinated",
+  "follow_up_queries": [...]
+}
+```
 
+
+
+## 🔬 Query Modes
+
+### `vanilla`
+Single retrieval pass → answer. Fast baseline.
+
+### `graph`
+Retrieval + neighbour expansion via a document similarity graph. Better recall on related concepts.
+
+### `adaptive` ⭐
+Full pipeline: route → iterative retrieval → draft → follow-up → reflect → final answer. Best quality.
+
+
+
+## 🧪 Demo Scripts
+
+Run an **interactive side-by-side comparison** of all three modes:
 ```bash
 python scripts/run_demo.py
 ```
 
-Run a small benchmark-style comparison:
-
+Run the **mini benchmark harness** to compare precision / grounding scores:
 ```bash
 python scripts/evaluate_demo.py
 ```
 
-## Benchmarks you can extend to
 
-This repo ships with demo data and a tiny evaluation harness. You can extend it to:
-- HotpotQA
-- 2WikiMultihopQA
-- FRAMES benchmark
 
-Recommended upgrades:
-- replace TF-IDF with dense embeddings
-- replace heuristic router with an LLM router
-- replace lexical reflection with an LLM verifier
-- add BM25 + reranker
-- add LangGraph / state-machine orchestration
+## 📊 Extending to Real Benchmarks
 
-## Suggested CV / GitHub framing
+This repo ships with demo data and a lightweight eval harness. Swap in any QA dataset:
 
-**Adaptive RAG system with query routing, iterative retrieval, and self-reflection for grounded QA.**
+- [HotpotQA](https://hotpotqa.github.io/) — multi-hop reasoning
+- [2WikiMultihopQA](https://github.com/Alab-NII/2wikimultihop) — cross-document inference
+- [FRAMES](https://github.com/google-deepmind/frames) — factual & reasoning evaluation
 
-Or:
 
-**Built an adaptive retrieval-augmented generation pipeline that dynamically routes queries, performs multi-step retrieval, and verifies grounding before answering.**
+
+## 🔧 Recommended Upgrades
+
+```
+TF-IDF retrieval      →  Dense embeddings (e.g. BGE, E5, OpenAI ada)
+Lexical router        →  LLM-based query classifier
+Lexical reflection    →  LLM verifier (NLI or prompted)
+Single retriever      →  BM25 + cross-encoder reranker
+Ad-hoc orchestration  →  LangGraph state-machine
+```
+
+
+
+## 💼 GitHub / CV Framing
+
+> *Built an adaptive retrieval-augmented generation pipeline that dynamically routes queries, performs multi-step retrieval, and verifies answer grounding before responding.*
+
+Short version:
+> *Adaptive RAG system with query routing, iterative retrieval, and self-reflection for grounded QA.*
+
+<div align="center">
+
+
+
+</div>
